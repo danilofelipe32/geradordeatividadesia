@@ -6,8 +6,27 @@ import { parseFile, dataUrlToFile } from './fileParserService';
 const RAG_CONTEXT_LIMIT = 180000;
 
 /**
+ * Trunca um texto para um comprimento máximo sem cortar palavras ao meio.
+ * Adiciona uma nota indicando que o conteúdo foi truncado.
+ */
+const smartTruncate = (text: string, maxLength: number): string => {
+    if (text.length <= maxLength) {
+        return text;
+    }
+    // Encontra o último espaço dentro do limite para evitar cortar uma palavra.
+    const lastSpaceIndex = text.lastIndexOf(' ', maxLength);
+    const effectiveLength = lastSpaceIndex > 0 ? lastSpaceIndex : maxLength;
+    
+    // Retorna o texto truncado com uma nota para indicar que o conteúdo foi cortado.
+    return text.substring(0, effectiveLength) + '... [Conteúdo truncado para caber no limite]';
+};
+
+/**
  * Monta o contexto a partir dos arquivos de apoio, garantindo que não exceda o orçamento de caracteres.
- * Se o conteúdo total for muito grande, ele é truncado de forma inteligente e proporcional.
+ * Otimizações:
+ * 1. Trunca o conteúdo de forma inteligente, sem cortar palavras ao meio.
+ * 2. Adiciona marcadores de início/fim para cada arquivo, ajudando a IA a distinguir as fontes.
+ * 3. Lida com erros de parsing de arquivos individuais sem interromper o processo.
  */
 const buildRagContext = async (files: StoredFile[], contextBudget: number): Promise<string> => {
     if (!files || files.length === 0 || contextBudget <= 0) {
@@ -15,30 +34,48 @@ const buildRagContext = async (files: StoredFile[], contextBudget: number): Prom
     }
 
     const parsingPromises = files.map(async (storedFile) => {
-        const file = await dataUrlToFile(storedFile.content, storedFile.name, storedFile.type);
-        return parseFile(file);
+        try {
+            const file = await dataUrlToFile(storedFile.content, storedFile.name, storedFile.type);
+            return { name: storedFile.name, content: await parseFile(file) };
+        } catch (error) {
+            console.error(`Falha ao processar o arquivo ${storedFile.name}:`, error);
+            // Retorna null para arquivos que falham, para serem filtrados depois.
+            return null;
+        }
     });
     
-    const contents = await Promise.all(parsingPromises);
-    const totalLength = contents.reduce((acc, content) => acc + content.length, 0);
+    // Filtra arquivos que falharam no parsing e não têm conteúdo.
+    const parsedFiles = (await Promise.all(parsingPromises)).filter(
+        (file): file is { name: string; content: string } => file !== null && file.content.length > 0
+    );
+    
+    if (parsedFiles.length === 0) {
+        return '';
+    }
 
-    let finalContents: string[];
+    const totalLength = parsedFiles.reduce((acc, file) => acc + file.content.length, 0);
+
+    let finalContents: { name: string; content: string }[];
 
     if (totalLength > contextBudget) {
         console.warn(`O conteúdo dos arquivos (${totalLength} chars) excede o orçamento (${contextBudget} chars). O conteúdo será truncado proporcionalmente.`);
         
-        finalContents = contents.map(content => {
-            if (totalLength === 0) return ''; // Evita divisão por zero
-            const proportion = content.length / totalLength;
+        finalContents = parsedFiles.map(file => {
+            if (totalLength === 0) return { ...file, content: '' }; // Evita divisão por zero
+            const proportion = file.content.length / totalLength;
             const budgetedLength = Math.floor(proportion * contextBudget);
-            return content.substring(0, budgetedLength);
+            // Usa a função de truncagem inteligente
+            return { ...file, content: smartTruncate(file.content, budgetedLength) };
         });
 
     } else {
-        finalContents = contents;
+        finalContents = parsedFiles;
     }
 
-    return finalContents.join('\n\n---\n\n');
+    // Adiciona metadados sobre qual arquivo está sendo usado no contexto
+    return finalContents.map(file => {
+        return `--- Início do Documento: ${file.name} ---\n${file.content}\n--- Fim do Documento: ${file.name} ---`;
+    }).join('\n\n');
 };
 
 /**
