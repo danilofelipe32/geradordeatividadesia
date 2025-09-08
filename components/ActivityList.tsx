@@ -4,6 +4,8 @@ import { TrashIcon } from './icons/TrashIcon';
 import { PencilIcon } from './icons/PencilIcon';
 import { ExportIcon } from './icons/ExportIcon';
 import { SearchIcon } from './icons/SearchIcon';
+import { PillarIcon } from './icons/PillarIcon';
+import { LevelIcon } from './icons/LevelIcon';
 
 interface ActivityListProps {
   activities: Activity[];
@@ -39,12 +41,18 @@ const ActivityCard: React.FC<{ activity: Activity, onDelete: (id: number) => voi
             </div>
         </div>
         
-        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mb-4">
-          <span className="bg-primary/10 text-primary font-semibold px-3 py-1 rounded-full text-xs">{activity.subject}</span>
-          <span className="bg-secondary/10 text-secondary-dark font-semibold px-3 py-1 rounded-full text-xs">{activity.grade}</span>
-          <span className="bg-green-100 text-green-800 font-semibold px-3 py-1 rounded-full text-xs">{activity.level}</span>
-           <span className="bg-purple-100 text-purple-800 font-semibold px-3 py-1 rounded-full text-xs">{activity.pillar}</span>
-          <span className="bg-yellow-100 text-yellow-800 font-semibold px-3 py-1 rounded-full text-xs">{activity.duracaoEstimada} min</span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-gray-600 mb-4">
+          <span className="bg-primary/10 text-primary font-semibold px-3 py-1 rounded-full text-xs flex items-center gap-1.5">{activity.subject}</span>
+          <span className="bg-secondary/10 text-secondary-dark font-semibold px-3 py-1 rounded-full text-xs flex items-center gap-1.5">{activity.grade}</span>
+          <span title={`Nível: ${activity.level}`} className="bg-green-100 text-green-800 font-semibold px-3 py-1 rounded-full text-xs flex items-center gap-1.5">
+             <LevelIcon level={activity.level} className="h-3 w-3" />
+             {activity.level}
+          </span>
+           <span title={`Pilar: ${activity.pillar}`} className="bg-purple-100 text-purple-800 font-semibold px-3 py-1 rounded-full text-xs flex items-center gap-1.5">
+             <PillarIcon pillar={activity.pillar} className="h-3.5 w-3.5" />
+             {activity.pillar}
+           </span>
+          <span className="bg-yellow-100 text-yellow-800 font-semibold px-3 py-1 rounded-full text-xs flex items-center gap-1.5">{activity.duracaoEstimada} min</span>
         </div>
 
         <p className="text-text-secondary mb-6 whitespace-pre-wrap">{activity.descricao}</p>

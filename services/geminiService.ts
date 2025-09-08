@@ -1,7 +1,7 @@
 import { AiGeneratedActivity, ActivityFormData, StoredFile } from '../types';
 import { parseFile, dataUrlToFile } from './fileParserService';
 
-// Limite de caracteres para o contexto RAG.
+// Limite de caracteres para o contexto RAG. A ApiFreeLLM tem um limite de 200k chars.
 const RAG_CONTEXT_LIMIT = 180000;
 
 /**
@@ -22,10 +22,6 @@ const smartTruncate = (text: string, maxLength: number): string => {
 
 /**
  * Monta o contexto a partir dos arquivos de apoio, garantindo que não exceda o orçamento de caracteres.
- * Otimizações:
- * 1. Trunca o conteúdo de forma inteligente, sem cortar palavras ao meio.
- * 2. Adiciona marcadores de início/fim para cada arquivo, ajudando a IA a distinguir as fontes.
- * 3. Lida com erros de parsing de arquivos individuais sem interromper o processo.
  */
 const buildRagContext = async (files: StoredFile[], contextBudget: number): Promise<string> => {
     if (!files || files.length === 0 || contextBudget <= 0) {
@@ -77,42 +73,122 @@ const buildRagContext = async (files: StoredFile[], contextBudget: number): Prom
     }).join('\n\n');
 };
 
+
 /**
- * Gera atividades chamando a função serverless da Netlify, que por sua vez chama a API do Gemini.
- * Esta abordagem é segura pois a chave de API não é exposta no frontend.
+ * Extrai um objeto JSON de uma string de texto.
+ * Lida com blocos de código markdown (```json) e JSON simples.
+ */
+const extractJson = (text: string): any => {
+    // Primeiro, tenta encontrar um bloco de código JSON
+    const jsonCodeBlockMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonCodeBlockMatch && jsonCodeBlockMatch[1]) {
+        try {
+            return JSON.parse(jsonCodeBlockMatch[1]);
+        } catch (e) {
+            console.error("JSON em bloco de código malformado, tentando extração geral.", jsonCodeBlockMatch[1]);
+        }
+    }
+
+    // Se não encontrar ou falhar, tenta extrair o primeiro objeto JSON aninhado corretamente
+    const startIndex = text.indexOf('{');
+    const endIndex = text.lastIndexOf('}');
+
+    if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+        throw new Error("A resposta da IA não contém um objeto JSON válido.");
+    }
+
+    const jsonString = text.substring(startIndex, endIndex + 1);
+
+    try {
+        return JSON.parse(jsonString);
+    } catch (parseError) {
+        console.error("Falha ao analisar o JSON extraído:", jsonString);
+        throw new Error("A resposta da IA está em um formato JSON malformado.");
+    }
+}
+
+
+/**
+ * Gera atividades chamando a ApiFreeLLM diretamente do cliente.
  */
 export const generateActivities = async (formData: ActivityFormData, files: StoredFile[] = []): Promise<AiGeneratedActivity[]> => {
     try {
-        // Calcular o orçamento de caracteres para o RAG, deixando espaço para o resto do prompt e a resposta.
-        const promptBaseLength = 2000; // Reserva para systemInstruction e userPrompt na função serverless
-        const ragBudget = RAG_CONTEXT_LIMIT - promptBaseLength;
-        const ragContext = await buildRagContext(files, ragBudget);
+        const ragContext = await buildRagContext(files, RAG_CONTEXT_LIMIT);
+        const hasRagContext = ragContext.length > 0;
+
+        const systemInstruction = "Você é um designer instrucional sênior e especialista em pedagogia, com profundo conhecimento do currículo brasileiro (BNCC e BNCC Computação). Sua missão é criar planos de aula excepcionalmente completos e detalhados, prontos para serem aplicados em sala de aula. Se um contexto de documentos (RAG) for fornecido, suas respostas devem ser estritamente baseadas nele.";
         
-        // Chama a função serverless da Netlify
-        const response = await fetch('/.netlify/functions/gemini', {
+        const bnccInstruction = hasRagContext
+            ? "string - Após uma análise cuidadosa, extraia DIRETAMENTE E EXCLUSIVAMENTE do contexto (documentos de apoio) o código e a descrição da competência da BNCC mais relevante para a atividade. Se nenhuma competência aplicável for encontrada no contexto, retorne a string 'Não identificada no material de apoio'."
+            : "string - O código e a descrição completa da principal competência da BNCC geral abordada.";
+
+        const bnccComputacaoInstruction = hasRagContext
+            ? "string - Após uma análise cuidadosa, extraia DIRETAMENTE E EXCLUSIVAMENTE do contexto (documentos de apoio) o código e a descrição da competência da BNCC Computação mais relevante para a atividade. Se nenhuma competência aplicável for encontrada no contexto, retorne a string 'Não identificada no material de apoio'."
+            : "string - O código e a descrição completa da principal competência da BNCC Computação.";
+
+
+        const jsonStructurePrompt = `
+Sua resposta DEVE ser APENAS um objeto JSON válido, sem nenhum texto ou explicação adicional antes ou depois dele. O JSON deve seguir estritamente esta estrutura:
+{
+  "atividades": [
+    {
+      "titulo": "string - Um título criativo e chamativo para a atividade.",
+      "descricao": "string - Descrição MUITO detalhada, formatada em markdown com títulos claros. DEVE OBRIGATORIAMENTE conter as seguintes seções com estes títulos exatos: '### Objetivos da Atividade', '### Passo a Passo para o Professor', '### Instruções para os Alunos', e '### Sugestão de Avaliação'. O passo a passo deve ser uma lista numerada e clara.",
+      "competenciaBNCC": "${bnccInstruction}",
+      "competenciaBNCCComputacao": "${bnccComputacaoInstruction}",
+      "duracaoEstimada": "integer - O tempo estimado em minutos para a conclusão da atividade.",
+      "recursosNecessarios": ["string[] - Uma lista detalhada de todos os recursos necessários."]
+    }
+  ]
+}
+`;
+        
+        const userPrompt = `
+          Gere ${formData.quantity} ${formData.quantity > 1 ? 'planos de aula detalhados' : 'plano de aula detalhado'} para a disciplina de "${formData.subject}" sobre o tópico "${formData.topic}".
+          As atividades são destinadas a uma turma de "${formData.grade}" e devem ter um nível de dificuldade "${formData.level}".
+          Cada plano de aula deve obrigatoriamente integrar o pilar do pensamento computacional: "${formData.pillar}".
+        `;
+        
+        const contextPrompt = hasRagContext
+        ? `Use estritamente as informações do contexto abaixo como fonte primária para criar as atividades:\n\n### CONTEXTO DOS DOCUMENTOS ###\n${ragContext}\n### FIM DO CONTEXTO ###\n\nCom base no contexto acima, elabore a seguinte solicitação:\n${userPrompt}`
+        : userPrompt;
+
+        const finalMessage = `${systemInstruction}\n\n${jsonStructurePrompt}\n\n${contextPrompt}`;
+
+        const response = await fetch('https://apifreellm.com/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ formData, ragContext }),
+            body: JSON.stringify({ message: finalMessage }),
         });
-
+        
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Não foi possível analisar a resposta de erro do servidor.' }));
-            throw new Error(`Erro do servidor (${response.status}): ${errorData.error || response.statusText}`);
+           // A documentação diz que sempre retorna 200, mas por segurança:
+           throw new Error(`Erro de rede (${response.status}): ${response.statusText}`);
         }
 
         const result = await response.json();
+
+        if (result.status === 'rate_limited') {
+            throw new Error(`Limite de requisições atingido. Por favor, aguarde ${result.retry_after || 5} segundos antes de tentar novamente.`);
+        }
+
+        if (result.status !== 'success' || !result.response) {
+            throw new Error(`Erro da API: ${result.error || 'Resposta inválida recebida.'}`);
+        }
+
+        const parsedJson = extractJson(result.response);
         
-        if (result && Array.isArray(result.atividades)) {
-            return result.atividades;
+        if (parsedJson && Array.isArray(parsedJson.atividades)) {
+            return parsedJson.atividades;
         } else {
-            console.error("Resposta da função Netlify com formato inesperado:", result);
+            console.error("Resposta da API com formato JSON inesperado:", parsedJson);
             throw new Error("A resposta do servidor não corresponde à estrutura esperada (falta a chave 'atividades').");
         }
 
     } catch (error) {
-        console.error("Erro ao chamar a função Netlify:", error);
+        console.error("Erro ao chamar a ApiFreeLLM:", error);
         const errorMessage = error instanceof Error 
             ? `Falha ao se comunicar com o serviço de geração de atividades. Detalhes: ${error.message}`
             : "Ocorreu um erro desconhecido ao gerar as atividades.";
