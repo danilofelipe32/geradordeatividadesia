@@ -1,4 +1,3 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { AiGeneratedActivity, ActivityFormData, StoredFile } from '../types';
 import { parseFile, dataUrlToFile } from './fileParserService';
 
@@ -79,144 +78,44 @@ const buildRagContext = async (files: StoredFile[], contextBudget: number): Prom
 };
 
 /**
- * Extrai uma string JSON de uma resposta que pode conter formatação extra (como blocos de código Markdown).
- */
-const extractJson = (text: string): string => {
-    const markdownMatch = text.match(/```(json)?\s*([\s\S]*?)\s*```/);
-    if (markdownMatch && markdownMatch[2]) {
-        return markdownMatch[2].trim();
-    }
-    
-    // Fallback: Encontra o primeiro '{' ou '[' e o último '}' ou ']' correspondente.
-    const firstBrace = text.indexOf('{');
-    const firstBracket = text.indexOf('[');
-    
-    let startIndex = -1;
-    if (firstBrace === -1) startIndex = firstBracket;
-    else if (firstBracket === -1) startIndex = firstBrace;
-    else startIndex = Math.min(firstBrace, firstBracket);
-
-    if (startIndex === -1) {
-        throw new Error("Nenhum JSON válido encontrado na resposta da IA.");
-    }
-
-    const lastBrace = text.lastIndexOf('}');
-    const lastBracket = text.lastIndexOf(']');
-    const endIndex = Math.max(lastBrace, lastBracket);
-
-    if (endIndex === -1) {
-        throw new Error("JSON incompleto na resposta da IA.");
-    }
-
-    return text.substring(startIndex, endIndex + 1);
-};
-
-
-const responseSchema = {
-    type: Type.OBJECT,
-    properties: {
-        atividades: {
-            type: Type.ARRAY,
-            description: "Lista de planos de aula detalhados.",
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    titulo: {
-                        type: Type.STRING,
-                        description: "Um título criativo e chamativo que resuma a essência da atividade.",
-                    },
-                    descricao: {
-                        type: Type.STRING,
-                        description: "Descrição detalhada e contextualizada, incluindo seções obrigatórias: 'Contextualização', 'Objetivos de Aprendizagem', 'Passo a Passo da Atividade', e 'Avaliação'.",
-                    },
-                    competenciaBNCC: {
-                        type: Type.STRING,
-                        description: "O código e a descrição completa da principal competência da BNCC geral abordada. Ex: (EF01LP01) Reconhecer que textos são lidos e escritos da esquerda para a direita e de cima para baixo da página.",
-                    },
-                    competenciaBNCCComputacao: {
-                        type: Type.STRING,
-                        description: "O código e a descrição completa da principal competência da BNCC Computação. Ex: (EF01CO01) Identificar e nomear os principais componentes de um computador e suas funções.",
-                    },
-                    duracaoEstimada: {
-                        type: Type.INTEGER,
-                        description: "O tempo estimado em minutos para a conclusão da atividade.",
-                    },
-                    recursosNecessarios: {
-                        type: Type.ARRAY,
-                        description: "Uma lista detalhada de todos os recursos necessários, incluindo digitais e físicos.",
-                        items: { type: Type.STRING },
-                    },
-                },
-                required: ['titulo', 'descricao', 'competenciaBNCC', 'competenciaBNCCComputacao', 'duracaoEstimada', 'recursosNecessarios'],
-            },
-        },
-    },
-    required: ['atividades'],
-};
-
-/**
- * Gera atividades chamando a API do Gemini diretamente do frontend.
+ * Gera atividades chamando a função serverless da Netlify, que por sua vez chama a API do Gemini.
+ * Esta abordagem é segura pois a chave de API não é exposta no frontend.
  */
 export const generateActivities = async (formData: ActivityFormData, files: StoredFile[] = []): Promise<AiGeneratedActivity[]> => {
     try {
-        const apiKey = "AIzaSyCM62dkI9oNfSrp0W2NFNlXJiZXJL2wna4";
-        if (!apiKey) {
-            throw new Error('A Chave de API não está configurada no código.');
-        }
-
-        const ai = new GoogleGenAI({ apiKey });
-
-        const systemInstruction = "Você é um designer instrucional sênior e especialista em pedagogia, com profundo conhecimento do currículo brasileiro (BNCC e BNCC Computação). Sua missão é criar planos de aula completos e detalhados, não apenas esboços de atividades. Cada atividade deve ser criativa, engajadora e eficaz, integrando perfeitamente a disciplina solicitada com o pilar do pensamento computacional. Cada 'descricao' deve obrigatoriamente conter as seguintes seções em negrito: '**Contextualização:**', '**Objetivos de Aprendizagem:**', '**Passo a Passo da Atividade:**' e '**Avaliação:**'. Se um contexto de documentos (RAG) for fornecido, suas respostas devem ser estritamente baseadas nele.";
-    
-        const userPrompt = `
-          Gere ${formData.quantity} ${formData.quantity > 1 ? 'planos de aula detalhados' : 'plano de aula detalhado'} para a disciplina de "${formData.subject}" sobre o tópico "${formData.topic}".
-          As atividades são destinadas a uma turma de "${formData.grade}" e devem ter um nível de dificuldade "${formData.level}".
-          Cada plano de aula deve obrigatoriamente integrar o pilar do pensamento computacional: "${formData.pillar}".
-        `;
-        
         // Calcular o orçamento de caracteres para o RAG, deixando espaço para o resto do prompt e a resposta.
-        const promptBaseLength = systemInstruction.length + userPrompt.length;
+        const promptBaseLength = 2000; // Reserva para systemInstruction e userPrompt na função serverless
         const ragBudget = RAG_CONTEXT_LIMIT - promptBaseLength;
         const ragContext = await buildRagContext(files, ragBudget);
         
-        const finalPrompt = ragContext
-        ? `Use estritamente as informações do contexto abaixo como fonte primária para criar as atividades. Não invente informações que não estejam nos documentos fornecidos.\n\n### CONTEXTO DOS DOCUMENTOS ###\n${ragContext}\n### FIM DO CONTEXTO ###\n\nCom base no contexto acima, elabore a seguinte solicitação:\n${userPrompt}`
-        : userPrompt;
-    
-        const response = await ai.models.generateContent({
-           model: "gemini-2.5-flash",
-           contents: finalPrompt,
-           config: {
-             systemInstruction: systemInstruction,
-             responseMimeType: "application/json",
-             responseSchema: responseSchema,
-           },
+        // Chama a função serverless da Netlify
+        const response = await fetch('/.netlify/functions/gemini', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ formData, ragContext }),
         });
-        
-        const rawJsonText = response.text;
-        const cleanedJson = extractJson(rawJsonText);
-        const parsedResponse = JSON.parse(cleanedJson);
 
-        if (parsedResponse && Array.isArray(parsedResponse.atividades)) {
-            return parsedResponse.atividades;
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Não foi possível analisar a resposta de erro do servidor.' }));
+            throw new Error(`Erro do servidor (${response.status}): ${errorData.error || response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (result && Array.isArray(result.atividades)) {
+            return result.atividades;
         } else {
-            console.error("Resposta da IA com formato inesperado:", parsedResponse);
-            throw new Error("A resposta da IA não corresponde à estrutura esperada (falta a chave 'atividades').");
+            console.error("Resposta da função Netlify com formato inesperado:", result);
+            throw new Error("A resposta do servidor não corresponde à estrutura esperada (falta a chave 'atividades').");
         }
 
     } catch (error) {
-        console.error("Erro ao chamar a API Gemini:", error);
-        let errorMessage = "Ocorreu um erro desconhecido ao gerar as atividades.";
-        if (error instanceof Error) {
-            if (error.message.includes('API key not valid')) {
-                errorMessage = "Falha na autenticação. Verifique se a Chave de API está correta e configurada.";
-            } else if (error.message.includes('found no valid JSON')) {
-                 errorMessage = "Falha ao analisar o JSON da resposta da IA. A resposta pode estar mal formatada ou incompleta.";
-            }
-            else {
-                 errorMessage = `Falha ao se comunicar com o serviço de geração de atividades. Detalhes: ${error.message}`;
-            }
-        }
+        console.error("Erro ao chamar a função Netlify:", error);
+        const errorMessage = error instanceof Error 
+            ? `Falha ao se comunicar com o serviço de geração de atividades. Detalhes: ${error.message}`
+            : "Ocorreu um erro desconhecido ao gerar as atividades.";
         throw new Error(errorMessage);
     }
 };
