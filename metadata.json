@@ -1,0 +1,5 @@
+{
+  "name": "Gerador de Atividades BNCC com IA",
+  "description": "Uma aplicação web para professores elaborarem atividades disciplinares baseadas na BNCC e na BNCC Computação, utilizando o poder da IA para integrar o pensamento computacional no planejamento de aulas.",
+  "requestFramePermissions": []
+}
