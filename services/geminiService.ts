@@ -159,11 +159,12 @@ const responseSchema = {
  */
 export const generateActivities = async (formData: ActivityFormData, files: StoredFile[] = []): Promise<AiGeneratedActivity[]> => {
     try {
-        if (!process.env.API_KEY) {
-            throw new Error('A variável de ambiente API_KEY não está configurada.');
+        const apiKey = "AIzaSyCM62dkI9oNfSrp0W2NFNlXJiZXJL2wna4";
+        if (!apiKey) {
+            throw new Error('A Chave de API não está configurada no código.');
         }
 
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey });
 
         const systemInstruction = "Você é um designer instrucional sênior e especialista em pedagogia, com profundo conhecimento do currículo brasileiro (BNCC e BNCC Computação). Sua missão é criar planos de aula completos e detalhados, não apenas esboços de atividades. Cada atividade deve ser criativa, engajadora e eficaz, integrando perfeitamente a disciplina solicitada com o pilar do pensamento computacional. Cada 'descricao' deve obrigatoriamente conter as seguintes seções em negrito: '**Contextualização:**', '**Objetivos de Aprendizagem:**', '**Passo a Passo da Atividade:**' e '**Avaliação:**'. Se um contexto de documentos (RAG) for fornecido, suas respostas devem ser estritamente baseadas nele.";
     
