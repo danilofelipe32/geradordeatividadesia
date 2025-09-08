@@ -69,24 +69,24 @@ ${editedActivity.recursosNecessarios.map(r => `- ${r}`).join('\n')}
     });
   };
 
-  const inputStyle = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm";
-  const labelStyle = "block text-sm font-medium text-gray-700";
+  const inputStyle = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary sm:text-sm";
+  const labelStyle = "block text-sm font-medium text-text-primary";
   const textareaStyle = `${inputStyle} min-h-[120px] resize-y`;
 
 
   return (
     <div 
-        className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center"
+        className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-modal-title"
     >
       <div 
-        className="bg-white rounded-lg shadow-2xl p-6 m-4 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
+        <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
           <h2 id="edit-modal-title" className="text-2xl font-bold text-primary-dark">Editar Atividade</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors" aria-label="Fechar">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -149,12 +149,12 @@ ${editedActivity.recursosNecessarios.map(r => `- ${r}`).join('\n')}
             <label htmlFor="recursosNecessarios" className={labelStyle}>Recursos Necessários (um por linha)</label>
             <textarea name="recursosNecessarios" id="recursosNecessarios" value={editedActivity.recursosNecessarios.join('\n')} onChange={handleChange} className={textareaStyle} required />
           </div>
-          <div className="mt-6 flex justify-between items-center pt-4 border-t">
+          <div className="mt-6 flex flex-col-reverse sm:flex-row justify-between items-center pt-4 border-t border-gray-200">
             <button
                 type="button"
                 onClick={handleCopy}
                 disabled={isCopied}
-                className="flex items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:bg-green-300 transition-colors"
+                className="w-full sm:w-auto mt-4 sm:mt-0 flex items-center justify-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-accent-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:bg-green-300 transition-colors"
               >
                 {isCopied ? (
                   <>
@@ -170,12 +170,12 @@ ${editedActivity.recursosNecessarios.map(r => `- ${r}`).join('\n')}
                   </>
                 )}
               </button>
-            <div className="flex space-x-4">
-                <button type="button" onClick={onClose} className="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+            <div className="flex space-x-4 w-full sm:w-auto">
+                <button type="button" onClick={onClose} className="w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
                 Cancelar
                 </button>
-                <button type="submit" className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-dark">
-                Salvar Alterações
+                <button type="submit" className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-dark">
+                Salvar
                 </button>
             </div>
           </div>

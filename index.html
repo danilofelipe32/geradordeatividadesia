@@ -4,19 +4,37 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gerador de Atividades BNCC com IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
             colors: {
               primary: {
-                DEFAULT: '#005A9C',
-                light: '#E6F0F8',
-                dark: '#003D6B'
+                DEFAULT: '#4338CA', // Indigo 600
+                light: '#E0E7FF',   // Indigo 100
+                dark: '#312E81'     // Indigo 800
               },
-              secondary: '#FFC72C',
-              accent: '#4CAF50',
+              secondary: {
+                DEFAULT: '#06B6D4', // Cyan 500
+                light: '#CFFAFE',   // Cyan 100
+                dark: '#0E7490'     // Cyan 700
+              },
+              accent: {
+                DEFAULT: '#10B981', // Emerald 500
+                dark: '#059669'     // Emerald 600
+              },
+              background: '#F8FAFC', // Slate 50
+              text: {
+                primary: '#1E293B',   // Slate 800
+                secondary: '#64748B',// Slate 500
+              }
             }
           }
         }
@@ -27,7 +45,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <!-- Library for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script type="importmap">
+    <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.1.1",
@@ -38,9 +57,8 @@
 }
 </script>
 </head>
-  <body class="bg-gray-50">
+  <body class="bg-background text-text-primary font-sans antialiased">
     <div id="root"></div>
-    <!-- A aplicação agora é carregada a partir do arquivo javascript compilado -->
     <script type="module" src="/bundle.js"></script>
   </body>
 </html>

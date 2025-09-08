@@ -127,12 +127,9 @@ const RAGManager: React.FC<RAGManagerProps> = ({ files, onFilesChange, selectedF
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium text-primary-dark">Seus Documentos</h3>
-        <p className="text-sm text-gray-500 mt-1">
-          Anexe arquivos (.pdf, .txt, .docx, .md) para usar como base na criação das atividades.
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          Nota: Se o volume total dos arquivos selecionados for muito grande, o conteúdo será automaticamente resumido para caber no limite da IA.
+        <h3 className="text-lg font-semibold text-primary-dark">Documentos de Apoio</h3>
+        <p className="text-sm text-text-secondary mt-1">
+          Anexe arquivos (.pdf, .txt, .docx) para usar como base na criação das atividades.
         </p>
       </div>
       
@@ -140,13 +137,13 @@ const RAGManager: React.FC<RAGManagerProps> = ({ files, onFilesChange, selectedF
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={`w-full flex flex-col justify-center items-center gap-2 py-6 px-4 border-2 border-dashed rounded-md cursor-pointer transition-colors ${
-          isDragOver ? 'border-primary bg-primary-light' : 'border-gray-300 hover:border-primary hover:bg-primary-light'
+        className={`w-full flex flex-col justify-center items-center gap-2 py-6 px-4 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+          isDragOver ? 'border-primary bg-primary-light' : 'border-gray-300 hover:border-primary hover:bg-primary-light/50'
         }`}
       >
         <UploadIcon />
         <span className="text-sm font-medium text-gray-600 text-center">
-          Arraste e solte ou clique para escolher
+          Arraste e solte ou clique para enviar
         </span>
         <input 
             type="file" 
@@ -158,74 +155,67 @@ const RAGManager: React.FC<RAGManagerProps> = ({ files, onFilesChange, selectedF
       </label>
 
       {files.length > 0 && (
-        <div className="flex items-center justify-center gap-2 text-sm pt-2 flex-wrap">
-            <button onClick={() => setStatusFilter('all')} className={filterButtonStyle(statusFilter === 'all')}>Todos</button>
-            <button onClick={() => setStatusFilter('completed')} className={filterButtonStyle(statusFilter === 'completed')}>Concluídos</button>
-            <button onClick={() => setStatusFilter('processing')} className={filterButtonStyle(statusFilter === 'processing')}>Processando</button>
-            <button onClick={() => setStatusFilter('error')} className={filterButtonStyle(statusFilter === 'error')}>Com Erro</button>
+        <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-center gap-2 text-sm flex-wrap">
+                <button onClick={() => setStatusFilter('all')} className={filterButtonStyle(statusFilter === 'all')}>Todos</button>
+                <button onClick={() => setStatusFilter('completed')} className={filterButtonStyle(statusFilter === 'completed')}>Prontos</button>
+                <button onClick={() => setStatusFilter('processing')} className={filterButtonStyle(statusFilter === 'processing')}>Processando</button>
+                <button onClick={() => setStatusFilter('error')} className={filterButtonStyle(statusFilter === 'error')}>Com Erro</button>
+            </div>
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 -mr-2">
+                {filteredFiles.length === 0 ? (
+                <p className="text-sm text-center text-gray-500 py-4">
+                    Nenhum arquivo corresponde ao filtro.
+                </p>
+                ) : (
+                filteredFiles.map(file => (
+                    <div 
+                    key={file.id} 
+                    className="flex items-center gap-3 p-2 rounded-md bg-background hover:bg-gray-100"
+                    title={file.status === 'error' ? file.errorMessage : file.name}
+                    >
+                    {file.status === 'completed' && (
+                        <input
+                        type="checkbox"
+                        id={`file-${file.id}`}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary flex-shrink-0"
+                        checked={selectedFiles.includes(file.id)}
+                        onChange={() => handleToggleSelection(file.id)}
+                        />
+                    )}
+                    <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center ml-1">
+                        {getStatusIcon(file)}
+                    </div>
+                    <div className="flex-grow flex flex-col justify-center overflow-hidden">
+                        <label 
+                        htmlFor={file.status === 'completed' ? `file-${file.id}` : undefined} 
+                        className={`text-sm truncate ${file.status === 'completed' ? 'cursor-pointer' : 'cursor-default'} ${file.status === 'error' ? 'text-red-600' : 'text-text-primary'}`}
+                        >
+                        {file.name}
+                        </label>
+                    </div>
+                    <button onClick={() => handleDeleteFile(file.id)} className="text-gray-400 hover:text-red-500 flex-shrink-0" aria-label="Excluir arquivo">
+                        <TrashIcon />
+                    </button>
+                    </div>
+                ))
+                )}
+            </div>
+
+            <button
+                onClick={handleClearAll}
+                className="w-full text-sm text-red-600 hover:text-red-800 font-medium py-2 rounded-md hover:bg-red-50 transition-colors"
+            >
+                Limpar Tudo
+            </button>
         </div>
       )}
 
-      <div className="space-y-2 pt-2 max-h-60 overflow-y-auto pr-2">
-        {filteredFiles.length === 0 ? (
-          <p className="text-sm text-center text-gray-500 py-4">
-            {files.length > 0 ? 'Nenhum arquivo corresponde ao filtro.' : 'Nenhum arquivo anexado.'}
+       {files.length === 0 && (
+         <p className="text-sm text-center text-gray-500 py-4">
+            Nenhum arquivo anexado.
           </p>
-        ) : (
-          filteredFiles.map(file => (
-            <div 
-              key={file.id} 
-              className="flex items-center gap-2 p-2 rounded-md bg-gray-50 hover:bg-gray-100"
-              title={file.status === 'error' ? file.errorMessage : file.name}
-            >
-              {file.status === 'completed' && (
-                <input
-                  type="checkbox"
-                  id={`file-${file.id}`}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary flex-shrink-0"
-                  checked={selectedFiles.includes(file.id)}
-                  onChange={() => handleToggleSelection(file.id)}
-                />
-              )}
-              <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                {getStatusIcon(file)}
-              </div>
-              <div className="flex-grow flex flex-col justify-center overflow-hidden">
-                <label 
-                  htmlFor={file.status === 'completed' ? `file-${file.id}` : undefined} 
-                  className={file.status === 'completed' ? 'cursor-pointer' : 'cursor-default'}
-                >
-                  <span className={`text-sm truncate ${file.status === 'error' ? 'text-red-600' : 'text-gray-800'}`}>{file.name}</span>
-                </label>
-                {file.status === 'processing' && (
-                  <span className="text-xs text-gray-500">Processando...</span>
-                )}
-                {file.status === 'error' && (
-                  <span className="text-xs text-red-600 truncate" title={file.errorMessage}>
-                    {file.errorMessage}
-                  </span>
-                )}
-              </div>
-              <button onClick={() => handleDeleteFile(file.id)} className="text-gray-400 hover:text-red-500 flex-shrink-0" aria-label="Excluir arquivo">
-                <TrashIcon />
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-
-      {files.length > 0 && (
-         <button
-            onClick={handleClearAll}
-            className="w-full text-sm text-red-600 hover:text-red-800 font-medium py-2 rounded-md hover:bg-red-50 transition-colors"
-        >
-            Limpar Tudo
-        </button>
-      )}
-
-      <p className="text-xs text-gray-400 text-center pt-2">
-        Os arquivos são salvos localmente no seu navegador.
-      </p>
+       )}
     </div>
   );
 };

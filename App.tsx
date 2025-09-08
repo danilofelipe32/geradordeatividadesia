@@ -100,48 +100,50 @@ const App: React.FC = () => {
   );
 
   const tabStyle = (tabName: ActiveTab) => 
-    `px-4 py-2 text-sm font-medium rounded-t-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark ${
+    `px-4 py-2 font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark ${
       activeTab === tabName 
-      ? 'bg-white text-primary-dark border-gray-300 border-b-0' 
-      : 'bg-primary-light text-gray-600 hover:bg-white/70'
+      ? 'text-primary border-b-2 border-primary' 
+      : 'text-text-secondary hover:text-primary'
     }`;
   
   return (
-    <div className="min-h-screen bg-primary-light font-sans">
+    <div className="min-h-screen bg-background">
       <Header onInfoClick={() => setIsInfoModalOpen(true)} />
       <main className="container mx-auto p-4 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-4 xl:col-span-3">
             <div className="sticky top-8">
-              <div className="flex border-b border-gray-300">
-                <button onClick={() => setActiveTab('form')} className={tabStyle('form')}>
-                  Gerar Atividade
-                </button>
-                <button onClick={() => setActiveTab('rag')} className={tabStyle('rag')}>
-                  Materiais de Apoio (RAG)
-                </button>
-              </div>
-              <div className="bg-white p-6 rounded-b-lg rounded-r-lg shadow-lg">
-                {activeTab === 'form' && <ActivityForm onSubmit={handleGenerateActivities} isLoading={isLoading} />}
-                {activeTab === 'rag' && (
-                  <RAGManager 
-                    files={ragFiles} 
-                    onFilesChange={setRagFiles} 
-                    selectedFiles={selectedFileIds} 
-                    onSelectionChange={setSelectedFileIds}
-                  />
-                )}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="flex border-b border-gray-200 px-4">
+                  <button onClick={() => setActiveTab('form')} className={tabStyle('form')}>
+                    Gerador
+                  </button>
+                  <button onClick={() => setActiveTab('rag')} className={tabStyle('rag')}>
+                    Documentos
+                  </button>
+                </div>
+                <div className="p-6">
+                  {activeTab === 'form' && <ActivityForm onSubmit={handleGenerateActivities} isLoading={isLoading} />}
+                  {activeTab === 'rag' && (
+                    <RAGManager 
+                      files={ragFiles} 
+                      onFilesChange={setRagFiles} 
+                      selectedFiles={selectedFileIds} 
+                      onSelectionChange={setSelectedFileIds}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-8 xl:col-span-9">
             {isLoading && (
-              <div className="flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm rounded-lg p-8 shadow-md">
+              <div className="flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl p-8 shadow-sm border border-gray-200">
                 <Loader />
-                <p className="mt-4 text-primary-dark font-semibold text-center">Gerando atividades... Isso pode levar alguns instantes.</p>
+                <p className="mt-6 text-primary-dark font-semibold text-center">Gerando atividades... Isso pode levar alguns instantes.</p>
               </div>
             )}
-            {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-md" role="alert">{error}</div>}
+            {error && <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-xl shadow-sm" role="alert">{error}</div>}
             
             <ActivityList 
               activities={filteredActivities}
@@ -163,7 +165,7 @@ const App: React.FC = () => {
           </div>
         </div>
       </main>
-      <footer className="text-center p-4 text-gray-500 text-sm">
+      <footer className="text-center p-6 text-text-secondary text-sm">
         <p>Desenvolvido com IA para educadores inovadores.</p>
       </footer>
 

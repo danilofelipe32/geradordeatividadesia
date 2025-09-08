@@ -51,12 +51,12 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ onSubmit, isLoading }) => {
     onSubmit(formData);
   };
 
-  const inputStyle = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm";
-  const labelStyle = "block text-sm font-medium text-gray-700";
+  const inputStyle = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary sm:text-sm transition-shadow";
+  const labelStyle = "block text-sm font-medium text-text-primary";
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg space-y-6 sticky top-8">
-      <h2 className="text-2xl font-bold text-primary-dark">Criar Nova Atividade</h2>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <h2 className="text-xl font-bold text-primary-dark">Criar Nova Atividade</h2>
       
       <div>
         <label htmlFor="subject" className={labelStyle}>Disciplina</label>
@@ -68,6 +68,7 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ onSubmit, isLoading }) => {
             {Object.entries(medioSubjects).map(([area, disciplines]) => (
                 <optgroup key={area} label={`Ensino Médio - ${area}`}>
                 {disciplines.map(d => <option key={`medio-${d}-${area}`} value={d}>{d}</option>)}
+                {/* FIX: The closing tag for optgroup was misspelled as endgroup. */}
                 </optgroup>
             ))}
         </select>
@@ -80,7 +81,7 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ onSubmit, isLoading }) => {
 
       <div>
         <label htmlFor="grade" className={labelStyle}>Turma / Ano</label>
-        <input type="text" name="grade" id="grade" value={formData.grade} onChange={handleChange} className={inputStyle} placeholder="Ex: 6º Ano do Ensino Fundamental" required />
+        <input type="text" name="grade" id="grade" value={formData.grade} onChange={handleChange} className={inputStyle} placeholder="Ex: 6º Ano" required />
       </div>
 
       <div>
@@ -98,12 +99,12 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ onSubmit, isLoading }) => {
           </select>
         </div>
         <div>
-          <label htmlFor="quantity" className={labelStyle}>Nº de Atividades</label>
+          <label htmlFor="quantity" className={labelStyle}>Nº</label>
           <input type="number" name="quantity" id="quantity" value={formData.quantity} onChange={handleChange} className={inputStyle} min="1" max="5" required />
         </div>
       </div>
 
-      <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-dark disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200">
+      <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-semibold text-white bg-accent hover:bg-accent-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-dark disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105">
         {isLoading ? 'Gerando...' : 'Gerar Atividades'}
         {!isLoading && <SparklesIcon />}
       </button>

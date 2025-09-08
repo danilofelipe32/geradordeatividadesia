@@ -7,44 +7,44 @@ interface InfoModalProps {
 const InfoModal: React.FC<InfoModalProps> = ({ onClose }) => {
   const InfoSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div>
-      <h3 className="text-lg font-bold text-primary-dark mb-2">{title}</h3>
-      <div className="space-y-2 text-gray-700 text-sm">{children}</div>
+      <h3 className="text-xl font-bold text-primary-dark mb-2">{title}</h3>
+      <div className="space-y-2 text-text-secondary">{children}</div>
     </div>
   );
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center"
+      className="fixed inset-0 bg-black/50 z-40 flex justify-center items-center p-4 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
       aria-modal="true"
       role="dialog"
     >
       <div 
-        className="bg-white rounded-lg shadow-2xl p-6 m-4 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex justify-between items-start">
-            <h2 className="text-2xl font-bold text-primary mb-6">Sobre a Aplicação</h2>
+        <div className="flex justify-between items-start mb-6">
+            <h2 className="text-3xl font-bold text-primary">Sobre a Aplicação</h2>
             <button 
                 onClick={onClose} 
                 className="text-gray-400 hover:text-gray-600 transition-colors"
                 aria-label="Fechar modal"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
         
-        <div className="space-y-6">
+        <div className="space-y-8">
           <InfoSection title="Missão">
             <p>O Gerador de Atividades com IA foi criado para apoiar educadores no desenvolvimento de planos de aula inovadores, alinhados à Base Nacional Comum Curricular (BNCC) e à BNCC Computação. Nossa missão é facilitar a integração do Pensamento Computacional em diversas disciplinas, economizando tempo e inspirando práticas pedagógicas criativas.</p>
           </InfoSection>
 
           <InfoSection title="Como Funciona?">
-            <ol className="list-decimal list-inside space-y-1">
+            <ol className="list-decimal list-inside space-y-2">
               <li><strong>Preencha o Formulário:</strong> Especifique a disciplina, assunto, turma e o pilar do Pensamento Computacional que deseja trabalhar.</li>
-              <li><strong>Adicione Materiais (Opcional):</strong> Use a aba "Materiais de Apoio (RAG)" para anexar documentos (.pdf, .docx, etc.). A IA usará esses arquivos como base para criar atividades ainda mais personalizadas.</li>
+              <li><strong>Adicione Materiais (Opcional):</strong> Use a aba "Documentos" para anexar arquivos (.pdf, .docx, etc.). A IA usará esses arquivos como base para criar atividades ainda mais personalizadas.</li>
               <li><strong>Gere as Atividades:</strong> Clique em "Gerar" e a IA criará planos de aula detalhados com base nas suas especificações.</li>
               <li><strong>Gerencie e Exporte:</strong> Edite, filtre, remova ou exporte suas atividades para PDF com um único clique.</li>
             </ol>
@@ -68,11 +68,11 @@ const InfoModal: React.FC<InfoModalProps> = ({ onClose }) => {
             </ul>
           </InfoSection>
 
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end pt-4 border-t border-gray-200">
             <button 
               type="button" 
               onClick={onClose} 
-              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-dark"
+              className="py-2 px-6 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-dark"
             >
               Entendido
             </button>
