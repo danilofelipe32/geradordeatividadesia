@@ -190,9 +190,22 @@ const RAGManager: React.FC<RAGManagerProps> = ({ files, onFilesChange, selectedF
               <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
                 {getStatusIcon(file)}
               </div>
-              <label htmlFor={`file-${file.id}`} className="flex-grow flex items-center gap-2 cursor-pointer overflow-hidden">
-                <span className={`text-sm truncate ${file.status === 'error' ? 'text-red-600' : 'text-gray-800'}`}>{file.name}</span>
-              </label>
+              <div className="flex-grow flex flex-col justify-center overflow-hidden">
+                <label 
+                  htmlFor={file.status === 'completed' ? `file-${file.id}` : undefined} 
+                  className={file.status === 'completed' ? 'cursor-pointer' : 'cursor-default'}
+                >
+                  <span className={`text-sm truncate ${file.status === 'error' ? 'text-red-600' : 'text-gray-800'}`}>{file.name}</span>
+                </label>
+                {file.status === 'processing' && (
+                  <span className="text-xs text-gray-500">Processando...</span>
+                )}
+                {file.status === 'error' && (
+                  <span className="text-xs text-red-600 truncate" title={file.errorMessage}>
+                    {file.errorMessage}
+                  </span>
+                )}
+              </div>
               <button onClick={() => handleDeleteFile(file.id)} className="text-gray-400 hover:text-red-500 flex-shrink-0" aria-label="Excluir arquivo">
                 <TrashIcon />
               </button>
