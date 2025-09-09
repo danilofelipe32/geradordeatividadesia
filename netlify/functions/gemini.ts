@@ -9,10 +9,13 @@ const handler: Handler = async (event: HandlerEvent): Promise<HandlerResponse> =
     };
   }
 
-  if (!process.env.API_KEY) {
+  // A chave da API foi inserida diretamente no código, conforme solicitado.
+  const apiKey = "AIzaSyCM62dkI9oNfSrp0W2NFNlXJiZXJL2wna4";
+
+  if (!apiKey) {
       return {
           statusCode: 500,
-          body: JSON.stringify({ error: 'A chave da API não está configurada no servidor.' })
+          body: JSON.stringify({ error: 'A chave da API não está configurada.' })
       };
   }
 
@@ -48,7 +51,7 @@ const handler: Handler = async (event: HandlerEvent): Promise<HandlerResponse> =
     ? `Use estritamente as informações do contexto abaixo como fonte primária para criar as atividades:\n\n### CONTEXTO DOS DOCUMENTOS ###\n${ragContext}\n### FIM DO CONTEXTO ###\n\nCom base no contexto acima, elabore a seguinte solicitação:\n${userPrompt}`
     : userPrompt;
     
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: apiKey });
 
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
