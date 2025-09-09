@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "mkdir -p dist && esbuild index.tsx --bundle --outfile=dist/bundle.js --jsx=automatic --define:process.env.NODE_ENV='\"production\"' && cp index.html metadata.json styles.css dist/"
+    "build": "mkdir -p dist && esbuild index.tsx --bundle --outfile=dist/bundle.js --jsx=automatic --define:process.env.NODE_ENV='\"production\"' --external:react --external:react-dom && cp index.html metadata.json styles.css dist/"
   },
   "dependencies": {
     "@google/genai": "^0.15.0",
